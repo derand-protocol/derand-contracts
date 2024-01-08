@@ -22,9 +22,10 @@ contract DeRandFeeManager is Ownable {
     IMuonClient.PublicKey public muonPublicKey;
     IMuonClient public muon;
 
-    mapping(address => Executor) executors;
+    mapping(address => Executor) public executors;
     // cunsumer => ( chainId => ( executor => depositedAmount ) )
-    mapping(address => mapping(uint256 => mapping(address => uint256))) deposits;
+    mapping(address => mapping(uint256 => mapping(address => uint256)))
+        public deposits;
 
     event ExecutorAdded(address executor, uint256 id);
     event ExecutorDeposit(
