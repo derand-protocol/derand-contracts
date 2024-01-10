@@ -17,10 +17,9 @@ const networks: { [networkName: string]: HttpNetworkUserConfig } = {
     accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   bscTestnet: {
-    url: "https://rpc.ankr.com/bsc_testnet_chapel",
+    url: "https://bsc-testnet.publicnode.com",
     chainId: 97,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!],
-    gas: 20000000
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   polygon: {
     url: `https://rpc.ankr.com/polygon/${process.env.ANKR_KEY}`,
