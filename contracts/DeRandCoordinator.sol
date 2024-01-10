@@ -47,6 +47,7 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
     event RandomWordsFulfilled(
         uint256 indexed requestId,
         address indexed consumer,
+        address indexed executor,
         uint256 outputSeed,
         bool success
     );
@@ -299,13 +300,15 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
      * @param rc request commitment pre-image, committed to at request time
      * @param reqId Muon reqId
      * @param signature Muon sig
+     * @param executor address of executor
      * @dev simulated offchain to determine gas usage
      */
     function fulfillRandomWords(
         uint256 requestId,
         RequestCommitment memory rc,
         bytes calldata reqId,
-        IMuonClient.SchnorrSign calldata signature
+        IMuonClient.SchnorrSign calldata signature,
+        address executor
     ) external nonReentrant {
         uint256 randomness = _getRandomness(
             requestId,
@@ -337,8 +340,13 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
         bool success = _callWithExactGas(rc.callbackGasLimit, rc.sender, resp);
         s_config.reentrancyLock = false;
 
-        // Include payment in the event for tracking costs.
-        emit RandomWordsFulfilled(requestId, rc.sender, randomness, success);
+        emit RandomWordsFulfilled(
+            requestId,
+            rc.sender,
+            executor,
+            randomness,
+            success
+        );
     }
 
     function verifyMuonSig(
