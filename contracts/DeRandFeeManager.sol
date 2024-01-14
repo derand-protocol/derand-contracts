@@ -20,7 +20,7 @@ contract DeRandFeeManager is Ownable {
 
     uint256 public muonAppId;
     IMuonClient.PublicKey public muonPublicKey;
-    IMuonClient public muon;
+    IMuonClient public muonClient;
 
     mapping(address => Executor) public executors;
     // cunsumer => ( chainId => ( executor => depositedAmount ) )
@@ -29,6 +29,7 @@ contract DeRandFeeManager is Ownable {
 
     event ExecutorAdded(address executor, uint256 id);
     event ExecutorDeposit(
+        address depositor,
         address consumer,
         uint256 chainId,
         address executor,
@@ -40,12 +41,12 @@ contract DeRandFeeManager is Ownable {
         address _muonToken,
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
-        address _muon
+        address _muonClient
     ) Ownable(msg.sender) {
         muonToken = IERC20(_muonToken);
         muonAppId = _muonAppId;
         muonPublicKey = _muonPublicKey;
-        muon = IMuonClient(_muon);
+        muonClient = IMuonClient(_muonClient);
     }
 
     function addExecutor(address executor) external returns (uint256) {
@@ -76,7 +77,13 @@ contract DeRandFeeManager is Ownable {
         deposits[_consumer][_chainId][_executor] += _amount;
         executors[_executor].balance += _amount;
 
-        emit ExecutorDeposit(_consumer, _chainId, _executor, _amount);
+        emit ExecutorDeposit(
+            msg.sender,
+            _consumer,
+            _chainId,
+            _executor,
+            _amount
+        );
     }
 
     function executorWithdraw(
@@ -120,7 +127,7 @@ contract DeRandFeeManager is Ownable {
         bytes32 hash,
         IMuonClient.SchnorrSign calldata sign
     ) internal {
-        bool verified = muon.muonVerify(
+        bool verified = muonClient.muonVerify(
             reqId,
             uint256(hash),
             sign,
