@@ -35,6 +35,11 @@ const networks: { [networkName: string]: HttpNetworkUserConfig } = {
     url: `https://rpc.ankr.com/optimism/${process.env.ANKR_KEY}`,
     chainId: 10,
     accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
+  },
+  avalancheFujiTestnet: {
+    url: `https://rpc.ankr.com/avalanche_fuji/${process.env.ANKR_KEY}`,
+    chainId: 43113,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   }
 }
 
@@ -114,7 +119,8 @@ const config: HardhatUserConfig = {
       bscTestnet: process.env.BSCSCAN_KEY || "",
       polygon: process.env.POLYGON_KEY || "",
       polygonMumbai: process.env.POLYGON_KEY || "",
-      optimisticEthereum: process.env.OPTIMISM_KEY || ""
+      optimisticEthereum: process.env.OPTIMISM_KEY || "",
+      avalancheFujiTestnet: process.env.AVALANCHE_KEY || ""
     },
     customChains: [
       {
