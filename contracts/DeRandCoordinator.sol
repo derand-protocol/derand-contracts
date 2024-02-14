@@ -1,16 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {DeRandCoordinatorInterface} from "./interfaces/DeRandCoordinatorInterface.sol";
 import {DeRandConsumerBase} from "./DeRandConsumerBase.sol";
 import "./interfaces/IMuonClient.sol";
-import "hardhat/console.sol";
 
 contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
+
     uint256 public muonAppId;
     IMuonClient.PublicKey public muonPublicKey;
     IMuonClient public muon;
+    address public muonValidGateway;
 
     // Note a nonce of 0 indicates consumer has not made a request yet.
     mapping(address => uint64) /* consumer */ /* nonce */ private s_consumers;
@@ -242,10 +247,8 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
     function _getRandomness(
         uint256 requestId,
         uint256 seed,
-        RequestCommitment memory rc,
-        bytes calldata reqId,
-        IMuonClient.SchnorrSign calldata signature
-    ) private returns (uint256 randomness) {
+        RequestCommitment memory rc
+    ) private view returns (uint256 randomness) {
         bytes32 commitment = s_requestCommitments[requestId];
         if (commitment == 0) {
             revert NoCorrespondingRequest();
@@ -266,29 +269,6 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
             revert IncorrectCommitment();
         }
 
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                muonAppId,
-                reqId,
-                block.chainid,
-                requestId,
-                rc.blockNum,
-                rc.callbackGasLimit,
-                rc.numWords,
-                rc.sender
-            )
-        );
-        console.log(muonAppId);
-        console.logBytes(reqId);
-        console.log(block.chainid);
-        console.log(requestId);
-        console.log(rc.blockNum);
-        console.log(rc.callbackGasLimit);
-        console.log(rc.numWords);
-        console.log(rc.sender);
-        console.logBytes32(hash);
-        verifyMuonSig(reqId, hash, signature);
-
         randomness = uint256(
             keccak256(abi.encodePacked(seed, blockhash(rc.blockNum)))
         );
@@ -306,17 +286,31 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
     function fulfillRandomWords(
         uint256 requestId,
         RequestCommitment memory rc,
+        address executor,
         bytes calldata reqId,
         IMuonClient.SchnorrSign calldata signature,
-        address executor
+        bytes calldata gatewaySignature
     ) external nonReentrant {
-        uint256 randomness = _getRandomness(
-            requestId,
-            signature.signature,
-            rc,
-            reqId,
-            signature
+        bytes32 hash = keccak256(
+            bytes.concat(
+                abi.encodePacked(
+                    muonAppId,
+                    reqId,
+                    block.chainid,
+                    address(this),
+                    requestId
+                ),
+                abi.encodePacked(
+                    rc.blockNum,
+                    rc.callbackGasLimit,
+                    rc.numWords,
+                    rc.sender
+                )
+            )
         );
+        verifyMuonSig(reqId, hash, signature, gatewaySignature);
+
+        uint256 randomness = _getRandomness(requestId, signature.signature, rc);
 
         uint256[] memory randomWords = new uint256[](rc.numWords);
         for (uint256 i = 0; i < rc.numWords; i++) {
@@ -349,10 +343,29 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
         );
     }
 
+    function setMuonAppId(uint256 _muonAppId) external onlyOwner {
+        muonAppId = _muonAppId;
+    }
+
+    function setMuonAddress(address _muonAddress) external onlyOwner {
+        muon = IMuonClient(_muonAddress);
+    }
+
+    function setMuonPubKey(
+        IMuonClient.PublicKey memory _muonPublicKey
+    ) external onlyOwner {
+        muonPublicKey = _muonPublicKey;
+    }
+
+    function setMuonGateway(address _gatewayAddress) external onlyOwner {
+        muonValidGateway = _gatewayAddress;
+    }
+
     function verifyMuonSig(
         bytes calldata reqId,
         bytes32 hash,
-        IMuonClient.SchnorrSign calldata sign
+        IMuonClient.SchnorrSign calldata sign,
+        bytes calldata gatewaySignature
     ) internal {
         bool verified = muon.muonVerify(
             reqId,
@@ -361,6 +374,16 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
             muonPublicKey
         );
         require(verified, "Invalid signature!");
+
+        if (muonValidGateway != address(0)) {
+            hash = hash.toEthSignedMessageHash();
+            address gatewaySignatureSigner = hash.recover(gatewaySignature);
+
+            require(
+                gatewaySignatureSigner == muonValidGateway,
+                "Gateway is not valid"
+            );
+        }
     }
 
     modifier nonReentrant() {
