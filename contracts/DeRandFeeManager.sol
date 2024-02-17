@@ -54,6 +54,9 @@ contract DeRandFeeManager is Ownable {
         lastExecutorId++;
         Executor storage newExecutor = executors[executor];
         newExecutor.id = lastExecutorId;
+
+        emit ExecutorAdded(executor, lastExecutorId);
+        
         return lastExecutorId;
     }
 
@@ -106,6 +109,26 @@ contract DeRandFeeManager is Ownable {
         muonToken.safeTransfer(_to, withdrawableAmount);
 
         emit ExecutorWithdraw(msg.sender, _to, _amount);
+    }
+
+    function setMuonToken(
+        address _muonToken
+    ) external onlyOwner {
+        muonToken = IERC20(_muonToken);
+    }
+
+    function setMuonAppId(uint256 _muonAppId) external onlyOwner {
+        muonAppId = _muonAppId;
+    }
+
+    function setMuonPubKey(
+        IMuonClient.PublicKey memory _muonPublicKey
+    ) external onlyOwner {
+        muonPublicKey = _muonPublicKey;
+    }
+
+    function setMuonClient(address _muonAddress) external onlyOwner {
+        muonClient = IMuonClient(_muonAddress);
     }
 
     function ownerWithdraw(
