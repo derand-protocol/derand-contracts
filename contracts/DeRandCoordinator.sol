@@ -15,7 +15,6 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
     uint256 public muonAppId;
     IMuonClient.PublicKey public muonPublicKey;
     IMuonClient public muon;
-    address public muonValidGateway;
 
     // Note a nonce of 0 indicates consumer has not made a request yet.
     mapping(address => uint64) /* consumer */ /* nonce */ private s_consumers;
@@ -288,8 +287,7 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
         RequestCommitment memory rc,
         address executor,
         bytes calldata reqId,
-        IMuonClient.SchnorrSign calldata signature,
-        bytes calldata gatewaySignature
+        IMuonClient.SchnorrSign calldata signature
     ) external nonReentrant {
         bytes32 hash = keccak256(
             bytes.concat(
@@ -308,7 +306,7 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
                 )
             )
         );
-        verifyMuonSig(reqId, hash, signature, gatewaySignature);
+        verifyMuonSig(reqId, hash, signature);
 
         uint256 randomness = _getRandomness(requestId, signature.signature, rc);
 
@@ -357,15 +355,10 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
         muonPublicKey = _muonPublicKey;
     }
 
-    function setMuonGateway(address _gatewayAddress) external onlyOwner {
-        muonValidGateway = _gatewayAddress;
-    }
-
     function verifyMuonSig(
         bytes calldata reqId,
         bytes32 hash,
-        IMuonClient.SchnorrSign calldata sign,
-        bytes calldata gatewaySignature
+        IMuonClient.SchnorrSign calldata sign
     ) internal {
         bool verified = muon.muonVerify(
             reqId,
@@ -374,16 +367,6 @@ contract DeRandCoordinator is Ownable, DeRandCoordinatorInterface {
             muonPublicKey
         );
         require(verified, "Invalid signature!");
-
-        if (muonValidGateway != address(0)) {
-            hash = hash.toEthSignedMessageHash();
-            address gatewaySignatureSigner = hash.recover(gatewaySignature);
-
-            require(
-                gatewaySignatureSigner == muonValidGateway,
-                "Gateway is not valid"
-            );
-        }
     }
 
     modifier nonReentrant() {
