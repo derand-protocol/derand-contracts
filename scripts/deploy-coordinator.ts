@@ -9,10 +9,10 @@ async function main() {
   const args = [
     "93503201847067459816865778983521324688116667814772937141130154736249866362126",
     {
-      x: "0x4182885822fe798509811091b5b6300299deae3d98a771cc179c2ffd11dabebb",
-      parity: 1,
+      x: "0x722e78958ba8e8527e562c75829aed104de631fd6509ce5fc1f487782da40d32",
+      parity: 0,
     },
-    "0x6121A86157E776e4E6b5d7758E752F214Bf691d3"
+    "0x4d831150A207bd6388cE78756CE7f14dcfB0E13E"
   ]
 
   const contract = await ethers.deployContract("DeRandCoordinator", args);
@@ -27,7 +27,7 @@ async function main() {
 
   await run("verify:verify", {
     address: contract.address,
-    constructorArguments: args
+    constructorArguments: args,
   });
 }
 
