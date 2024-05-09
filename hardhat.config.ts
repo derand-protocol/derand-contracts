@@ -21,6 +21,11 @@ const networks: { [networkName: string]: HttpNetworkUserConfig } = {
     chainId: 97,
     accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
+  bsc: {
+    url: "https://rpc.ankr.com/bsc",
+    chainId: 56,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!],
+  },
   polygon: {
     url: `https://rpc.ankr.com/polygon/${process.env.ANKR_KEY}`,
     chainId: 137,
@@ -29,6 +34,11 @@ const networks: { [networkName: string]: HttpNetworkUserConfig } = {
   polygonMumbai: {
     url: `https://rpc.ankr.com/polygon_mumbai/`,
     chainId: 80001,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
+  },
+  lineaMainnet: {
+    url: `https://1rpc.io/linea`,
+    chainId: 59144,
     accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   optimisticEthereum: {
@@ -40,7 +50,22 @@ const networks: { [networkName: string]: HttpNetworkUserConfig } = {
     url: `https://rpc.ankr.com/avalanche_fuji/${process.env.ANKR_KEY}`,
     chainId: 43113,
     accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
-  }
+  },
+  opBnb: {
+    url: `https://opbnb-rpc.publicnode.com`,
+    chainId: 204,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]  
+  },
+  base: {
+    url: "https://rpc.ankr.com/base",
+    chainId: 8453,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!],
+  },
+  scroll: {
+    url: "https://rpc.scroll.io",
+    chainId: 534352,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!],
+  },
 }
 
 function missing_privateKey() {
@@ -118,10 +143,15 @@ const config: HardhatUserConfig = {
       sepolia: process.env.ETHERSCAN_KEY || "",
       goerli: process.env.ETHERSCAN_KEY || "",
       bscTestnet: process.env.BSCSCAN_KEY || "",
+      bsc: process.env.BSCSCAN_KEY || "",
       polygon: process.env.POLYGON_KEY || "",
       polygonMumbai: process.env.POLYGON_KEY || "",
+      lineaMainnet: process.env.LINEASCAN_KEY || "",
       optimisticEthereum: process.env.OPTIMISM_KEY || "",
-      avalancheFujiTestnet: process.env.AVALANCHE_KEY || ""
+      avalancheFujiTestnet: process.env.AVALANCHE_KEY || "",
+      opBnb: process.env.OPBNB_KEY || "",
+      base: process.env.BASE_SCAN || "",
+      scroll: process.env.SCROLL_SCAN || ""
     },
     customChains: [
       {
@@ -132,6 +162,38 @@ const config: HardhatUserConfig = {
           browserURL: "https://ftmscan.com/",
         },
       },
+      {
+        network: "lineaMainnet",
+        chainId: 59144,
+        urls: {
+          apiURL: "https://api.lineascan.build/api",
+          browserURL: "https://lineascan.build/",
+        },
+      },
+      {
+        network: "opBnb",
+        chainId: 204,
+        urls: {
+          apiURL: `https://open-platform.nodereal.io/${process.env.OPBNB_KEY}/op-bnb-mainnet/contract/`,
+          browserURL: "https://mainnet.opbnbscan.com",
+        },
+      },
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: `https://api.basescan.org/api`,
+          browserURL: "https://basescan.org/",
+        },
+      },
+      {
+        network: "scroll",
+        chainId: 534352,
+        urls: {
+          apiURL: `https://api.scrollscan.com/api`,
+          browserURL: "https://scrollscan.com/",
+        },
+      }
     ]
   },
 };
